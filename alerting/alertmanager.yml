@@ -1,0 +1,100 @@
+# ──────────────────────────────────────────────────────────
+# Alertmanager Configuration
+# ML Observability Platform
+# ──────────────────────────────────────────────────────────
+
+global:
+  resolve_timeout: 5m
+
+  # ── Email Settings (configure for production) ──────────
+  # smtp_smarthost: "smtp.gmail.com:587"
+  # smtp_from: "alerts@your-domain.com"
+  # smtp_auth_username: "alerts@your-domain.com"
+  # smtp_auth_password: "your-app-password"
+  # smtp_require_tls: true
+
+
+# ──────────────────────────────────────────────────────────
+# ROUTES
+# ──────────────────────────────────────────────────────────
+
+route:
+  # Default receiver
+  receiver: "default-webhook"
+
+  # Group alerts by alertname
+  group_by: ["alertname", "severity"]
+
+  # Wait before sending grouped alerts
+  group_wait: 30s
+
+  # Wait before sending new alerts in same group
+  group_interval: 5m
+
+  # Wait before re-sending resolved alerts
+  repeat_interval: 4h
+
+  # Route specific alerts to specific receivers
+  routes:
+
+    # Critical alerts → immediate notification
+    - match:
+        severity: critical
+      receiver: "critical-webhook"
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts → standard notification
+    - match:
+        severity: warning
+      receiver: "default-webhook"
+      repeat_interval: 4h
+
+    # Info alerts → log only
+    - match:
+        severity: info
+      receiver: "info-webhook"
+      repeat_interval: 12h
+
+
+# ──────────────────────────────────────────────────────────
+# RECEIVERS
+# ──────────────────────────────────────────────────────────
+
+receivers:
+
+  # Default webhook receiver (replace URL with your endpoint)
+  - name: "default-webhook"
+    webhook_configs:
+      - url: "http://api:8000/webhooks/alerts"
+        send_resolved: true
+
+  # Critical alerts receiver
+  - name: "critical-webhook"
+    webhook_configs:
+      - url: "http://api:8000/webhooks/alerts"
+        send_resolved: true
+    # Uncomment for email notifications:
+    # email_configs:
+    #   - to: "oncall@your-domain.com"
+    #     send_resolved: true
+
+  # Info alerts (log only)
+  - name: "info-webhook"
+    webhook_configs:
+      - url: "http://api:8000/webhooks/alerts"
+        send_resolved: false
+
+
+# ──────────────────────────────────────────────────────────
+# INHIBITION RULES
+# ──────────────────────────────────────────────────────────
+
+inhibit_rules:
+
+  # If API is down, suppress all model health alerts
+  - source_match:
+      alertname: "APIServiceDown"
+    target_match_re:
+      alertname: "HighFraudRate|LowPredictionConfidence|DataDriftDetected"
+    equal: ["instance"]

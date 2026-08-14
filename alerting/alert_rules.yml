@@ -1,0 +1,126 @@
+# ──────────────────────────────────────────────────────────
+# Prometheus Alert Rules
+# ML Observability Platform
+# ──────────────────────────────────────────────────────────
+
+groups:
+
+  # ────────────────────────────────────────────────────────
+  # MODEL HEALTH ALERTS
+  # ────────────────────────────────────────────────────────
+
+  - name: model_health
+    rules:
+
+      # High fraud prediction rate
+      - alert: HighFraudRate
+        expr: >
+          (fraud_predictions_total / 
+           http_requests_total{handler="/predict"}) * 100 > 35
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High fraud prediction rate detected"
+          description: >
+            Fraud prediction rate has exceeded 35% for the last 5 minutes.
+            This may indicate data drift or a model performance issue.
+
+      # Low prediction confidence
+      - alert: LowPredictionConfidence
+        expr: prediction_confidence < 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low model prediction confidence"
+          description: >
+            The prediction confidence has dropped below 0.85 for 5 minutes.
+            Model may need retraining.
+
+      # Data drift detected
+      - alert: DataDriftDetected
+        expr: data_drift_status == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Data drift detected in production data"
+          description: >
+            Evidently AI has detected significant drift between 
+            production data and training data distributions.
+
+  # ────────────────────────────────────────────────────────
+  # APPLICATION HEALTH ALERTS
+  # ────────────────────────────────────────────────────────
+
+  - name: application_health
+    rules:
+
+      # API service down
+      - alert: APIServiceDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Fraud Detection API is down"
+          description: >
+            The FastAPI service has been unreachable for 1 minute.
+
+      # High prediction latency
+      - alert: HighPredictionLatency
+        expr: >
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{handler="/predict"}[5m])
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High prediction latency (p95 > 1s)"
+          description: >
+            95th percentile prediction latency has exceeded 1 second 
+            for the last 5 minutes.
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: >
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) /
+           sum(rate(http_requests_total[5m]))) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API error rate exceeds 5%"
+          description: >
+            More than 5% of API requests are returning 5xx errors.
+
+  # ────────────────────────────────────────────────────────
+  # RETRAINING ALERTS
+  # ────────────────────────────────────────────────────────
+
+  - name: retraining_alerts
+    rules:
+
+      # Retraining triggered
+      - alert: ModelRetrainingTriggered
+        expr: increase(model_retraining_total[1h]) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "Model retraining was triggered"
+          description: >
+            The automated retraining pipeline was triggered 
+            in the last hour.
+
+      # Excessive retraining
+      - alert: ExcessiveRetraining
+        expr: increase(model_retraining_total[24h]) > 5
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excessive model retraining detected"
+          description: >
+            More than 5 retraining events in the last 24 hours.
+            This may indicate unstable data or configuration issues.

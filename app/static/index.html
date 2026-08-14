@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ML Observability & Retraining Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: #131b2e;
+      --bg-card-hover: #1a253e;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-primary-hover: #4f46e5;
+      --emerald: #10b981;
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --rose: #f43f5e;
+      --rose-bg: rgba(244, 63, 94, 0.12);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* HEADER & STATUS BAR */
+    .header-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 28px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .title-area h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-area p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .status-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--amber);
+    }
+
+    .dot.online { background-color: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+    .dot.offline { background-color: var(--rose); }
+
+    /* TESTING GUIDE BANNER */
+    .guide-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+
+    .guide-banner h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #a5b4fc;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guide-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .step-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .step-number {
+      font-weight: 700;
+      color: var(--emerald);
+      margin-right: 4px;
+    }
+
+    /* MAIN GRID LAYOUT */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* CARD STYLING */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* FORM ELEMENTS */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    textarea {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 110px;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* BUTTONS */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--accent-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-warning {
+      background-color: var(--amber);
+      color: #000000;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      background-color: #d97706;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* NOTIFICATION MESSAGES */
+    .msg-box {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      word-break: break-word;
+    }
+
+    .msg-box.success {
+      background: var(--emerald-bg);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .msg-box.error {
+      background: var(--rose-bg);
+      border-color: rgba(244, 63, 94, 0.3);
+      color: #fda4af;
+    }
+
+    /* PREDICTION DISPLAY CARDS */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .result-card {
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .result-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .result-value {
+      font-size: 22px;
+      font-weight: 800;
+      margin-top: 6px;
+      color: var(--text-main);
+    }
+
+    .result-value.fraud {
+      color: var(--rose);
+      text-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+    }
+
+    .result-value.legit {
+      color: var(--emerald);
+      text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* METRICS STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .stat-title {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stat-num {
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 4px;
+      color: #ffffff;
+    }
+
+    /* TABLE DESIGN */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-fraud { background: var(--rose-bg); color: var(--rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-legit { background: var(--emerald-bg); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* OPS LINKS ROW */
+    .ops-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .ops-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #a5b4fc;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .ops-link:hover {
+      border-color: var(--accent-primary);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- HEADER -->
+    <header class="header-card">
+      <div class="title-area">
+        <h1>🔍 ML Observability Platform</h1>
+        <p>Real-time Fraud Detection, Drift Monitoring & Automated Model Retraining</p>
+      </div>
+      <div class="status-group">
+        <div class="status-badge"><div id="healthDot" class="dot"></div> API: <span id="healthTxt">Checking...</span></div>
+        <div class="status-badge"><div id="readyDot" class="dot"></div> DB: <span id="readyTxt">Checking...</span></div>
+        <div class="status-badge"><div id="authDot" class="dot"></div> User: <span id="authTxt">Signed Out</span></div>
+      </div>
+    </header>
+
+    <!-- TESTING & SCREENSHOT GUIDE FOR LINKEDIN -->
+    <div class="guide-banner">
+      <h3>🚀 How to Test & Record Screenshots for Demo / LinkedIn</h3>
+      <div class="guide-steps">
+        <div class="step-item">
+          <span class="step-number">1. Auth:</span> Click <strong>Sign In</strong> using default demo credentials (<code>pratiksingh</code> / <code>pratik123</code>).
+        </div>
+        <div class="step-item">
+          <span class="step-number">2. Predict:</span> Click <strong>Legit Sample</strong> or <strong>Fraud Sample</strong>, then press <strong>Run Prediction</strong>.
+        </div>
+        <div class="step-item">
+          <span class="step-number">3. Metrics:</span> View live prediction logs & model confidence stats updated instantly.
+        </div>
+        <div class="step-item">
+          <span class="step-number">4. Retrain:</span> Click <strong>Trigger Retraining</strong> to evaluate drift & train Model <code>v2</code>!
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN DASHBOARD GRID -->
+    <div class="dashboard-grid">
+      
+      <!-- LEFT COLUMN: AUTH & ADMIN CONTROLS -->
+      <div class="column">
+        <!-- AUTHENTICATION CARD -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔐 Session Login</div>
+            <div class="card-subtitle">Authenticate to make predictions and access metrics</div>
+          </div>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input id="username" type="text" value="pratiksingh" placeholder="Enter username">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" value="pratik123" placeholder="Enter password">
+          </div>
+          <div class="btn-group">
+            <button id="loginBtn" class="btn-primary" type="button">Sign In</button>
+            <button id="logoutBtn" class="btn-secondary" type="button">Sign Out</button>
+          </div>
+          <div id="loginMsg" class="msg-box">Enter credentials to authenticate session.</div>
+        </div>
+
+        <!-- MONITORING & RETRAINING CARD -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚡ Monitoring & Retraining</div>
+            <div class="card-subtitle">Run automated drift detection & MLflow retraining</div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+            Evaluates prediction confidence, fraud rates, and feature drift against baseline training data.
+          </p>
+          <button id="monitorBtn" class="btn-warning" type="button" disabled style="width: 100%;">
+            Trigger Monitoring & Retraining Workflow
+          </button>
+          <div id="monitorMsg" class="msg-box">Requires Admin session.</div>
+        </div>
+
+        <!-- OPS LINKS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔗 Infrastructure & Observability</div>
+            <div class="card-subtitle">Access underlying monitoring stack endpoints</div>
+          </div>
+          <div class="ops-links">
+            <a href="/docs" target="_blank" class="ops-link">📄 Swagger API Docs</a>
+            <a href="http://localhost:9090" target="_blank" class="ops-link">📊 Prometheus</a>
+            <a href="http://localhost:3000" target="_blank" class="ops-link">📈 Grafana</a>
+            <a href="http://localhost:5000" target="_blank" class="ops-link">🧪 MLflow UI</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: PREDICTION WORKBENCH & METRICS -->
+      <div class="column">
+        
+        <!-- PREDICTION WORKBENCH -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🧪 Prediction Workbench</div>
+            <div class="card-subtitle">Input 30-dimensional feature vector to test model response</div>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="features">30 Numeric Features (Comma Separated)</label>
+              <div class="btn-group">
+                <button id="btnLegitSample" class="btn-secondary" type="button" style="padding: 4px 10px; font-size: 12px;">Legit Sample</button>
+                <button id="btnFraudSample" class="btn-secondary" type="button" style="padding: 4px 10px; font-size: 12px; color: var(--rose);">Fraud Sample</button>
+              </div>
+            </div>
+            <textarea id="features" spellcheck="false" placeholder="0.1, -1.2, 0.5, ..."></textarea>
+          </div>
+
+          <button id="predictBtn" class="btn-primary" type="button" disabled style="width: 100%;">Run Prediction</button>
+          <div id="predictMsg" class="msg-box">Sign in to test predictions.</div>
+
+          <!-- OUTPUT RESULTS CARDS -->
+          <div class="results-grid">
+            <div class="result-card">
+              <div class="result-label">Prediction</div>
+              <div id="resPred" class="result-value">-</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">Confidence</div>
+              <div id="resConf" class="result-value">-</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">Model Version</div>
+              <div id="resVer" class="result-value">-</div>
+            </div>
+            <div class="result-card">
+              <div class="result-label">Latency</div>
+              <div id="resLatency" class="result-value">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODEL METRICS -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div class="card-title">📊 Aggregate Model Metrics</div>
+              <div class="card-subtitle">Live production statistics stored in SQL database</div>
+            </div>
+            <button id="refreshMetricsBtn" class="btn-secondary" type="button" disabled style="padding: 6px 12px; font-size: 12px;">Refresh</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-title">Total Requests</div>
+              <div id="statTotal" class="stat-num">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Avg Confidence</div>
+              <div id="statConf" class="stat-num">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Avg Latency</div>
+              <div id="statLatency" class="stat-num">-</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-title">Fraud Rate</div>
+              <div id="statFraudRate" class="stat-num">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT PREDICTIONS LOG TABLE -->
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div class="card-title">📜 Recent Prediction Logs</div>
+              <div class="card-subtitle">Real-time audit history of inference requests</div>
+            </div>
+            <button id="refreshLogsBtn" class="btn-secondary" type="button" disabled style="padding: 6px 12px; font-size: 12px;">Refresh Logs</button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Flag</th>
+                  <th>Confidence</th>
+                  <th>Latency</th>
+                  <th>Model</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="logsTableBody">
+                <tr><td colspan="6" style="color: var(--text-muted); text-align: center;">No prediction logs loaded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      token: "",
+      role: "",
+      username: "",
+    };
+
+    const els = {
+      username: document.getElementById("username"),
+      password: document.getElementById("password"),
+      features: document.getElementById("features"),
+      loginBtn: document.getElementById("loginBtn"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      predictBtn: document.getElementById("predictBtn"),
+      monitorBtn: document.getElementById("monitorBtn"),
+      refreshMetricsBtn: document.getElementById("refreshMetricsBtn"),
+      refreshLogsBtn: document.getElementById("refreshLogsBtn"),
+      btnLegitSample: document.getElementById("btnLegitSample"),
+      btnFraudSample: document.getElementById("btnFraudSample"),
+      loginMsg: document.getElementById("loginMsg"),
+      predictMsg: document.getElementById("predictMsg"),
+      monitorMsg: document.getElementById("monitorMsg"),
+      healthDot: document.getElementById("healthDot"),
+      healthTxt: document.getElementById("healthTxt"),
+      readyDot: document.getElementById("readyDot"),
+      readyTxt: document.getElementById("readyTxt"),
+      authDot: document.getElementById("authDot"),
+      authTxt: document.getElementById("authTxt"),
+      resPred: document.getElementById("resPred"),
+      resConf: document.getElementById("resConf"),
+      resVer: document.getElementById("resVer"),
+      resLatency: document.getElementById("resLatency"),
+      statTotal: document.getElementById("statTotal"),
+      statConf: document.getElementById("statConf"),
+      statLatency: document.getElementById("statLatency"),
+      statFraudRate: document.getElementById("statFraudRate"),
+      logsTableBody: document.getElementById("logsTableBody"),
+    };
+
+    function setMsg(el, text, type = "normal") {
+      el.textContent = text;
+      el.className = "msg-box " + (type === "success" ? "success" : type === "error" ? "error" : "");
+    }
+
+    function authHeaders() {
+      return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+    }
+
+    async function apiFetch(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(),
+          ...(options.headers || {}),
+        },
+      });
+
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+
+      if (!res.ok) {
+        throw new Error(data.detail || data.error || `Error ${res.status}`);
+      }
+      return data;
+    }
+
+    function updateAuthUi() {
+      const loggedIn = Boolean(state.token);
+      els.predictBtn.disabled = !loggedIn;
+      els.refreshMetricsBtn.disabled = !loggedIn;
+      els.refreshLogsBtn.disabled = !loggedIn;
+      els.monitorBtn.disabled = !(loggedIn && state.role === "admin");
+
+      if (loggedIn) {
+        els.authDot.className = "dot online";
+        els.authTxt.textContent = `${state.username} (${state.role})`;
+      } else {
+        els.authDot.className = "dot offline";
+        els.authTxt.textContent = "Signed Out";
+      }
+    }
+
+    function loadLegitSample() {
+      // Small features representing legitimate transaction
+      const values = Array.from({ length: 30 }, (_, i) => (Math.sin(i) * 0.5).toFixed(4));
+      els.features.value = values.join(", ");
+    }
+
+    function loadFraudSample() {
+      // Large anomalous features representing fraudulent transaction
+      const values = Array.from({ length: 30 }, (_, i) => ((i % 2 === 0 ? 1 : -1) * (i + 5) * 1.8).toFixed(4));
+      els.features.value = values.join(", ");
+    }
+
+    function parseFeatures() {
+      const raw = els.features.value.split(",").map(v => v.trim()).filter(Boolean);
+      if (raw.length !== 30) {
+        throw new Error(`Expected exactly 30 features, got ${raw.length}.`);
+      }
+      return raw.map(v => {
+        const num = Number(v);
+        if (Number.isNaN(num)) throw new Error(`Invalid number: ${v}`);
+        return num;
+      });
+    }
+
+    async function checkHealth() {
+      try {
+        const h = await apiFetch("/health");
+        els.healthDot.className = "dot online";
+        els.healthTxt.textContent = h.status;
+      } catch (e) {
+        els.healthDot.className = "dot offline";
+        els.healthTxt.textContent = "Offline";
+      }
+
+      try {
+        const r = await apiFetch("/ready");
+        els.readyDot.className = r.status === "ready" ? "dot online" : "dot offline";
+        els.readyTxt.textContent = r.database;
+      } catch (e) {
+        els.readyDot.className = "dot offline";
+        els.readyTxt.textContent = "Disconnected";
+      }
+    }
+
+    async function login() {
+      try {
+        const username = els.username.value.trim();
+        const password = els.password.value;
+        const res = await apiFetch("/auth/token", {
+          method: "POST",
+          body: JSON.stringify({ username, password }),
+        });
+
+        state.token = res.access_token;
+        state.role = res.role;
+        state.username = username;
+        updateAuthUi();
+        setMsg(els.loginMsg, `Authenticated successfully as ${username} (${res.role}).`, "success");
+        await Promise.all([refreshMetrics(), refreshLogs()]);
+      } catch (e) {
+        setMsg(els.loginMsg, e.message, "error");
+      }
+    }
+
+    function logout() {
+      state.token = "";
+      state.role = "";
+      state.username = "";
+      updateAuthUi();
+      setMsg(els.loginMsg, "Signed out successfully.");
+      setMsg(els.predictMsg, "Sign in to test predictions.");
+      setMsg(els.monitorMsg, "Admin session required.");
+    }
+
+    async function runPrediction() {
+      try {
+        const features = parseFeatures();
+        const res = await apiFetch("/predict", {
+          method: "POST",
+          body: JSON.stringify({ features }),
+        });
+
+        const isFraud = res.prediction === 1;
+        els.resPred.textContent = isFraud ? "1 (FRAUD)" : "0 (LEGIT)";
+        els.resPred.className = "result-value " + (isFraud ? "fraud" : "legit");
+        els.resConf.textContent = `${(res.confidence * 100).toFixed(1)}%`;
+        els.resVer.textContent = res.model_version;
+        els.resLatency.textContent = `${res.latency_ms} ms`;
+
+        setMsg(els.predictMsg, `Prediction Complete: ${isFraud ? "FRAUD DETECTED" : "Legitimate Transaction"} with ${(res.confidence * 100).toFixed(1)}% confidence.`, isFraud ? "error" : "success");
+
+        await Promise.all([refreshMetrics(), refreshLogs()]);
+      } catch (e) {
+        setMsg(els.predictMsg, e.message, "error");
+      }
+    }
+
+    async function refreshMetrics() {
+      if (!state.token) return;
+      try {
+        const data = await apiFetch("/model-metrics");
+        const m = data.metrics;
+        els.statTotal.textContent = m.total_predictions;
+        els.statConf.textContent = m.avg_confidence ? `${(m.avg_confidence * 100).toFixed(1)}%` : "0%";
+        els.statLatency.textContent = `${m.avg_latency_ms} ms`;
+        els.statFraudRate.textContent = `${m.fraud_rate}%`;
+      } catch (e) {
+        console.error("Failed to load metrics:", e);
+      }
+    }
+
+    async function refreshLogs() {
+      if (!state.token) return;
+      try {
+        const data = await apiFetch("/predictions/recent?limit=8");
+        const rows = data.predictions;
+        if (!rows || !rows.length) {
+          els.logsTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No predictions logged yet.</td></tr>';
+          return;
+        }
+
+        els.logsTableBody.innerHTML = rows.map(r => {
+          const isFraud = String(r.prediction) === "1";
+          const badgeClass = isFraud ? "badge-fraud" : "badge-legit";
+          const labelText = isFraud ? "1 (FRAUD)" : "0 (LEGIT)";
+          const dateStr = r.created_at ? new Date(r.created_at).toLocaleTimeString() : "-";
+          return `
+            <tr>
+              <td>#${r.id}</td>
+              <td><span class="badge ${badgeClass}">${labelText}</span></td>
+              <td>${(r.confidence * 100).toFixed(1)}%</td>
+              <td>${r.latency_ms} ms</td>
+              <td><code>${r.model_version}</code></td>
+              <td>${dateStr}</td>
+            </tr>
+          `;
+        }).join("");
+      } catch (e) {
+        els.logsTableBody.innerHTML = `<tr><td colspan="6" style="color: var(--rose);">${e.message}</td></tr>`;
+      }
+    }
+
+    async function runMonitoring() {
+      try {
+        setMsg(els.monitorMsg, "Evaluating drift & running retraining workflow...", "normal");
+        const res = await apiFetch("/run-monitoring", { method: "POST", body: JSON.stringify({}) });
+        const m = res.monitoring || {};
+        const msg = `Monitoring Complete! Drift: ${m.drift_detected ? "YES" : "NO"} | Retrained: ${m.retraining_triggered ? "YES (Model Updated)" : "NO"}`;
+        setMsg(els.monitorMsg, msg, "success");
+        await Promise.all([refreshMetrics(), refreshLogs(), checkHealth()]);
+      } catch (e) {
+        setMsg(els.monitorMsg, e.message, "error");
+      }
+    }
+
+    // EVENT LISTENERS
+    els.loginBtn.addEventListener("click", login);
+    els.logoutBtn.addEventListener("click", logout);
+    els.predictBtn.addEventListener("click", runPrediction);
+    els.monitorBtn.addEventListener("click", runMonitoring);
+    els.refreshMetricsBtn.addEventListener("click", refreshMetrics);
+    els.refreshLogsBtn.addEventListener("click", refreshLogs);
+    els.btnLegitSample.addEventListener("click", loadLegitSample);
+    els.btnFraudSample.addEventListener("click", loadFraudSample);
+
+    // INITIALIZATION
+    loadLegitSample();
+    updateAuthUi();
+    checkHealth();
+  </script>
+</body>
+</html>

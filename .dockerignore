@@ -1,0 +1,56 @@
+# ──────────────────────────────────────────────────────────
+# Docker Ignore — ML Observability Platform
+# ──────────────────────────────────────────────────────────
+
+# Virtual environments
+.venv
+venv
+env
+.env
+.env.*
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+
+# MLflow runs (large)
+mlruns/
+mlflow.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Grafana / Prometheus configs (mounted as volumes)
+grafana/
+alerting/
+prometheus.yml
+
+# Tests
+tests/
+
+# CI/CD
+.github/
+
+# Docs
+README.md
+Readme
+
+# Reports
+monitoring/drift_report.html
+
+# OS
+Thumbs.db
+.DS_Store

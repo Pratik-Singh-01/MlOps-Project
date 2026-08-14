@@ -1,0 +1,44 @@
+# ──────────────────────────────────────────────────────────
+# ML Observability Platform — Python Dependencies
+# ──────────────────────────────────────────────────────────
+
+# Core ML
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.6.1
+joblib==1.4.2
+
+# API
+fastapi==0.115.12
+uvicorn==0.34.2
+pydantic==2.11.3
+
+# Database
+sqlalchemy==2.0.41
+psycopg2-binary==2.9.10
+
+# Monitoring & Drift
+evidently==0.6.7
+
+# Experiment Tracking
+mlflow==2.22.0
+
+# Prometheus
+prometheus-client==0.22.1
+prometheus-fastapi-instrumentator==7.0.2
+
+# Auth
+python-jose[cryptography]==3.4.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-multipart==0.0.20
+
+# Testing
+pytest==8.3.5
+httpx==0.28.1
+
+# Logging
+python-json-logger==3.3.0
+
+# HTTP Client (simulation)
+requests==2.32.3
