@@ -22,6 +22,12 @@ class TokenRequest(BaseModel):
     password: str
 
 
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+    role: Optional[str] = "viewer"
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -107,6 +113,31 @@ def authenticate_user(username: str, password: str) -> Optional[dict]:
     if not secrets.compare_digest(password, user["password"]):
         return None
     return {"username": username, "role": user["role"]}
+
+
+def register_user(username: str, password: str, role: str = "viewer") -> dict:
+    clean_username = username.strip()
+    if not clean_username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username and password are required",
+        )
+    target_role = (role or "viewer").lower().strip()
+    if target_role not in ("admin", "viewer"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role must be 'admin' or 'viewer'",
+        )
+    if clean_username in USERS_DB:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered",
+        )
+    USERS_DB[clean_username] = {
+        "password": password,
+        "role": target_role,
+    }
+    return {"username": clean_username, "role": target_role}
 
 
 async def get_current_user(

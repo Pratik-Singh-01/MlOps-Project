@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 
 import config
 from app.auth import (
+    SignupRequest,
     TokenRequest,
     TokenResponse,
     UserInfo,
     authenticate_user,
     create_access_token,
     get_current_user,
+    register_user,
     require_admin,
 )
 from app.database import SessionLocal, engine
@@ -100,6 +102,21 @@ def login(request: TokenRequest):
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    token = create_access_token(username=user["username"], role=user["role"])
+    return TokenResponse(
+        access_token=token,
+        expires_in=config.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        role=user["role"],
+    )
+
+
+@app.post("/auth/signup", response_model=TokenResponse, tags=["Auth"])
+def signup(request: SignupRequest):
+    user = register_user(
+        username=request.username,
+        password=request.password,
+        role=request.role or "viewer",
+    )
     token = create_access_token(username=user["username"], role=user["role"])
     return TokenResponse(
         access_token=token,

@@ -238,6 +238,53 @@
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
 
+    /* AUTH TABS & SELECT */
+    .auth-tabs {
+      display: flex;
+      background: #0b1120;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 18px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .auth-tab.active {
+      background: var(--accent-primary);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    select {
+      width: 100%;
+      background: #0b1120;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
     /* BUTTONS */
     .btn-group {
       display: flex;
@@ -510,9 +557,15 @@
         <!-- AUTHENTICATION CARD -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">🔐 Session Login</div>
-            <div class="card-subtitle">Authenticate to make predictions and access metrics</div>
+            <div id="authTitle" class="card-title">🔐 Session Login</div>
+            <div id="authSubtitle" class="card-subtitle">Authenticate to make predictions and access next layers</div>
           </div>
+
+          <div class="auth-tabs">
+            <button id="tabSignin" class="auth-tab active" type="button">Sign In</button>
+            <button id="tabSignup" class="auth-tab" type="button">Sign Up</button>
+          </div>
+
           <div class="form-group">
             <label for="username">Username</label>
             <input id="username" type="text" value="pratiksingh" placeholder="Enter username">
@@ -521,8 +574,17 @@
             <label for="password">Password</label>
             <input id="password" type="password" value="pratik123" placeholder="Enter password">
           </div>
+
+          <div id="roleGroup" class="form-group" style="display: none;">
+            <label for="role">Select Account Role</label>
+            <select id="role">
+              <option value="viewer" selected>Viewer (Predictions & Metrics)</option>
+              <option value="admin">Admin (Predictions, Metrics & Retraining)</option>
+            </select>
+          </div>
+
           <div class="btn-group">
-            <button id="loginBtn" class="btn-primary" type="button">Sign In</button>
+            <button id="loginBtn" class="btn-primary" type="button" style="flex: 1;">Sign In</button>
             <button id="logoutBtn" class="btn-secondary" type="button">Sign Out</button>
           </div>
           <div id="loginMsg" class="msg-box">Enter credentials to authenticate session.</div>
@@ -672,11 +734,18 @@
       token: "",
       role: "",
       username: "",
+      mode: "signin",
     };
 
     const els = {
       username: document.getElementById("username"),
       password: document.getElementById("password"),
+      role: document.getElementById("role"),
+      roleGroup: document.getElementById("roleGroup"),
+      tabSignin: document.getElementById("tabSignin"),
+      tabSignup: document.getElementById("tabSignup"),
+      authTitle: document.getElementById("authTitle"),
+      authSubtitle: document.getElementById("authSubtitle"),
       features: document.getElementById("features"),
       loginBtn: document.getElementById("loginBtn"),
       logoutBtn: document.getElementById("logoutBtn"),
@@ -794,6 +863,64 @@
       }
     }
 
+    function switchAuthTab(mode) {
+      state.mode = mode;
+      if (mode === "signup") {
+        els.tabSignin.classList.remove("active");
+        els.tabSignup.classList.add("active");
+        els.authTitle.textContent = "📝 Create Account";
+        els.authSubtitle.textContent = "Sign up to unlock next layer features";
+        els.roleGroup.style.display = "block";
+        els.loginBtn.textContent = "Create Account & Sign In";
+        els.username.value = "";
+        els.password.value = "";
+        setMsg(els.loginMsg, "Fill out the fields to register a new account.");
+      } else {
+        els.tabSignup.classList.remove("active");
+        els.tabSignin.classList.add("active");
+        els.authTitle.textContent = "🔐 Session Login";
+        els.authSubtitle.textContent = "Authenticate to make predictions and access next layers";
+        els.roleGroup.style.display = "none";
+        els.loginBtn.textContent = "Sign In";
+        els.username.value = "pratiksingh";
+        els.password.value = "pratik123";
+        setMsg(els.loginMsg, "Enter credentials to authenticate session.");
+      }
+    }
+
+    async function handleAuthSubmit() {
+      if (state.mode === "signup") {
+        await signup();
+      } else {
+        await login();
+      }
+    }
+
+    async function signup() {
+      try {
+        const username = els.username.value.trim();
+        const password = els.password.value;
+        const role = els.role.value;
+        if (!username || !password) {
+          throw new Error("Username and password are required.");
+        }
+
+        const res = await apiFetch("/auth/signup", {
+          method: "POST",
+          body: JSON.stringify({ username, password, role }),
+        });
+
+        state.token = res.access_token;
+        state.role = res.role;
+        state.username = username;
+        updateAuthUi();
+        setMsg(els.loginMsg, `Account created! Signed in as ${username} (${res.role}).`, "success");
+        await Promise.all([refreshMetrics(), refreshLogs()]);
+      } catch (e) {
+        setMsg(els.loginMsg, e.message, "error");
+      }
+    }
+
     async function login() {
       try {
         const username = els.username.value.trim();
@@ -906,8 +1033,10 @@
     }
 
     // EVENT LISTENERS
-    els.loginBtn.addEventListener("click", login);
+    els.loginBtn.addEventListener("click", handleAuthSubmit);
     els.logoutBtn.addEventListener("click", logout);
+    els.tabSignin.addEventListener("click", () => switchAuthTab("signin"));
+    els.tabSignup.addEventListener("click", () => switchAuthTab("signup"));
     els.predictBtn.addEventListener("click", runPrediction);
     els.monitorBtn.addEventListener("click", runMonitoring);
     els.refreshMetricsBtn.addEventListener("click", refreshMetrics);

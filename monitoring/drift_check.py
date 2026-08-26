@@ -1,9 +1,9 @@
 import json
 import os
 import pandas as pd
-from sqlalchemy import create_engine
 
 import config
+from app.database import engine
 
 try:
     from evidently import Report
@@ -15,8 +15,6 @@ try:
 except ImportError:
     from evidently.metric_preset import DataDriftPreset
 
-
-engine = create_engine(config.DATABASE_URL)
 
 
 def check_drift():

@@ -54,6 +54,42 @@ class TestTokenEndpoint:
         assert response.status_code == 422
 
 
+class TestSignupEndpoint:
+    """Tests for /auth/signup."""
+
+    def test_signup_valid_user(self, client):
+        """Registering a new user should return a token and allow subsequent login."""
+        response = client.post(
+            "/auth/signup",
+            json={"username": "newuser", "password": "newpassword", "role": "viewer"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["role"] == "viewer"
+
+        headers = {"Authorization": f"Bearer {data['access_token']}"}
+        pred_res = client.post("/predict", json={"features": [0.0] * 30}, headers=headers)
+        assert pred_res.status_code == 200
+
+    def test_signup_duplicate_username(self, client):
+        """Duplicate username registration should return 400."""
+        response = client.post(
+            "/auth/signup",
+            json={"username": "admin", "password": "password123"},
+        )
+        assert response.status_code == 400
+        assert "already registered" in response.json()["detail"]
+
+    def test_signup_invalid_role(self, client):
+        """Invalid role should return 400."""
+        response = client.post(
+            "/auth/signup",
+            json={"username": "superman", "password": "secretpassword", "role": "superuser"},
+        )
+        assert response.status_code == 400
+
+
 class TestAPIKeyAuth:
     """Tests for API Key authentication."""
 

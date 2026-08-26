@@ -2,13 +2,10 @@ import subprocess
 import sys
 
 import pandas as pd
-from sqlalchemy import create_engine
 
 import config
+from app.database import engine
 from monitoring.drift_check import check_drift
-
-
-engine = create_engine(config.DATABASE_URL)
 
 
 def evaluate_model():
